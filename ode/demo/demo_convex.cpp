@@ -173,11 +173,16 @@ static void simLoop(int pause)
 	for ( int i=0; i<halton_numc; ++i )
 	{
 		dGeomID geom = hgeom[i];
+		if ( !geom ) continue;
 		dBodyID body = dGeomGetBody(geom);
 		//const dReal *pos = dBodyGetPosition(body);
 		//const dReal *rot = dBodyGetRotation(body);
 		const dReal *pos = dGeomGetPosition(geom);
 		const dReal *rot = dGeomGetRotation(geom);
+		if ( i==75 )
+			dsSetColor (1,1,0);
+		else
+			dsSetColor (1,1,1);
 		dsDrawConvex
 		(
 			pos, rot,
@@ -292,8 +297,8 @@ int main (int argc, char **argv)
 	}
 
 	// run simulation
-	const int w=1280;
-	const int h=720;
+	const int w=1920;
+	const int h=1080;
 	dsSimulationLoop (argc,argv,w,h,&fn);
 
 	dJointGroupEmpty (contactgroup);
