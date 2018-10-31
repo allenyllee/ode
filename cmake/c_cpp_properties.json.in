@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "@CMAKE_SYSTEM_NAME@",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "@CMAKE_C_COMPILER@",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

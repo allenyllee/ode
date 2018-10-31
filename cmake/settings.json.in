@@ -1,0 +1,12 @@
+{
+    "git.ignoreLimitWarning": true,
+    "terminal.integrated.shell.windows": "${BASH_EXECUTABLE}",
+    "terminal.integrated.shellArgs.windows": ["--login", "-i"],
+    "terminal.integrated.env.windows":
+    {
+        "MSYSTEM": "MINGW64",
+        "CHERE_INVOKING":"1"
+    },
+    "clang.executable": "${CLANG_EXECUTABLE}",
+    "cmake.cmakePath": "${CMAKE_COMMAND}"
+}
