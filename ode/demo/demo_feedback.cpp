@@ -47,7 +47,7 @@
 static dWorldID world;
 static dSpaceID space;
 
-static const int   STACKCNT=10;	// nr of weights on bridge
+static const int   STACKCNT=8;	// nr of weights on bridge
 static const int   SEGMCNT=16;	// nr of segments in bridge
 static const float SEGMDIM[3] = { 0.9, 4, 0.1 };
 
@@ -144,7 +144,7 @@ void drawGeom (dGeomID g)
 
 static void inspectJoints(void)
 {
-  const dReal forcelimit = 2000.0;
+  const dReal forcelimit = 6000.0;
   int i;
   for (i=0; i<SEGMCNT-1; i++)
   {
@@ -262,7 +262,7 @@ int main (int argc, char **argv)
   for (i=0; i<STACKCNT; i++)
   {
     stackbodies[i] = dBodyCreate(world);
-    dMassSetBox (&m, 2.0, 2, 2, 0.6);
+    dMassSetBox (&m, 1.0, 2, 2, 0.6);
     dBodySetMass(stackbodies[i],&m);
 
     stackgeoms[i] = dCreateBox(0, 2, 2, 0.6);
@@ -291,7 +291,7 @@ int main (int argc, char **argv)
     colours[i]=0.0;
 
   // run simulation
-  dsSimulationLoop (argc,argv,352,288,&fn);
+  dsSimulationLoop (argc,argv,1280,720,&fn);
 
   dJointGroupEmpty (contactgroup);
   dJointGroupDestroy (contactgroup);
