@@ -86,7 +86,6 @@ enum dxRandomReorderStage
     RRS__MIN,
 
     RRS_REORDERING = RRS__MIN,
-    RRS_REVERSAL,
 
     RRS__MAX,
 };
@@ -1518,13 +1517,14 @@ void dxQuickStepIsland_Stage2a(dxQuickStepperStage2CallContext *stage2CallContex
                 // because it gets destroyed by SOR solver
                 // instead of saving all Jacobian, we can save just rows
                 // for joints, that requested feedback (which is normally much less)
-                unsigned mfbCount = mindex[ji + 1].fbIndex - mindex[ji].fbIndex;
-                if (mfbCount != 0) {
-                    dReal *const JEnd = JRow + (sizeint)mfbCount * JME__MAX;
+                unsigned mfbIndex = mindex[ji].fbIndex;
+                if (mfbIndex != mindex[ji + 1].fbIndex) {
+                    dReal *const JEnd = JRow + infom * JME__MAX;
+                    dReal *JCopyRow = JCopy + mfbIndex * JCE__MAX; // Random access by mfbIndex here! Do not optimize!
                     for (const dReal *JCurr = JRow; ; ) {
-                        for (unsigned i = 0; i != JME__J1_COUNT; ++i) { JCopy[i + JCE__J1_MIN] = JCurr[i + JME__J1_MIN]; }
-                        for (unsigned j = 0; j != JME__J2_COUNT; ++j) { JCopy[j + JCE__J2_MIN] = JCurr[j + JME__J2_MIN]; }
-                        JCopy += JCE__MAX;
+                        for (unsigned i = 0; i != JME__J1_COUNT; ++i) { JCopyRow[i + JCE__J1_MIN] = JCurr[i + JME__J1_MIN]; }
+                        for (unsigned j = 0; j != JME__J2_COUNT; ++j) { JCopyRow[j + JCE__J2_MIN] = JCurr[j + JME__J2_MIN]; }
+                        JCopyRow += JCE__MAX;
                         dSASSERT((unsigned)JCE__J1_COUNT == JME__J1_COUNT);
                         dSASSERT((unsigned)JCE__J2_COUNT == JME__J2_COUNT);
                         dSASSERT(JCE__J1_COUNT + JCE__J2_COUNT == JCE__MAX);
@@ -2231,7 +2231,7 @@ void dxQuickStepIsland_Stage4LCP_ReorderPrep(dxQuickStepperStage4CallContext *st
 
     {
         // make sure constraints with findex < 0 come first.
-        IndexError *orderhead = order, *ordertail = order + m;
+        IndexError *orderhead = order, *ordertail = order + (m - valid_findices);
         const int *findex = localContext->m_findex;
 
         // Fill the array from both ends
@@ -2240,16 +2240,12 @@ void dxQuickStepIsland_Stage4LCP_ReorderPrep(dxQuickStepperStage4CallContext *st
                 orderhead->index = i; // Place them at the front
                 ++orderhead;
             } else {
-                // WARNING!!!
-                // The dependent constraints are put in reverse order here (backwards to front).
-                // They MUST be ordered this way.
-                // Putting them in normal order makes simulation less stable for some mysterious reason.
-                --ordertail;
                 ordertail->index = i; // Place them at the end
+                ++ordertail;
             }
         }
         dIASSERT(orderhead == order + (m - valid_findices));
-        dIASSERT(ordertail == order + (m - valid_findices));
+        dIASSERT(ordertail == order + m);
     }
 }
 
@@ -2404,18 +2400,19 @@ bool dxQuickStepIsland_Stage4LCP_ConstraintsShuffling(dxQuickStepperStage4CallCo
     if (iteration > 1) { // Only reorder starting from iteration #2
         // sort the constraints so that the ones converging slowest
         // get solved last. use the absolute (not relative) error.
+        /*
+         *  Full reorder needs to be done.
+         *  Even though this contradicts the initial idea of moving dependent constraints
+         *  to the order end the algorithm does not work the other way well.
+         *  It looks like the iterative method needs a shake after it already found
+         *  some initial approximations and those incurred errors help it to converge even better.
+         */
         if (ThrsafeExchange(&stage4CallContext->m_SOR_reorderHeadTaken, 1) == 0) {
             // Process the head
             const dxQuickStepperLocalContext *localContext = stage4CallContext->m_localContext;
-            ConstraintsReorderingHelper()(stage4CallContext, 0, localContext->m_m - localContext->m_valid_findices);
+            ConstraintsReorderingHelper()(stage4CallContext, 0, localContext->m_m);
         }
         
-        if (ThrsafeExchange(&stage4CallContext->m_SOR_reorderTailTaken, 1) == 0) {
-            // Process the tail
-            const dxQuickStepperLocalContext *localContext = stage4CallContext->m_localContext;
-            ConstraintsReorderingHelper()(stage4CallContext, localContext->m_m - localContext->m_valid_findices, localContext->m_m);
-        }
-
         result = true;
     }
     else if (iteration == 1) {
@@ -2449,7 +2446,7 @@ bool dxQuickStepIsland_Stage4LCP_ConstraintsShuffling(dxQuickStepperStage4CallCo
     if (iteration != 0) {
         dIASSERT(!dIN_RANGE(iteration, 0, RANDOM_CONSTRAINTS_REORDERING_FREQUENCY));
 
-        if (iteration % RANDOM_CONSTRAINTS_REORDERING_FREQUENCY == RRS_REORDERING) {
+        dIASSERT(iteration % RANDOM_CONSTRAINTS_REORDERING_FREQUENCY == RRS_REORDERING); {
             struct ConstraintsReorderingHelper
             {
                 void operator ()(dxQuickStepperStage4CallContext *stage4CallContext, unsigned int startIndex, unsigned int indicesCount)
@@ -2465,23 +2462,18 @@ bool dxQuickStepIsland_Stage4LCP_ConstraintsShuffling(dxQuickStepperStage4CallCo
                 }
             };
 
+            /*
+             *  Full reorder needs to be done.
+             *  Even though this contradicts the initial idea of moving dependent constraints
+             *  to the order end the algorithm does not work the other way well.
+             *  It looks like the iterative method needs a shake after it already found
+             *  some initial approximations and those incurred errors help it to converge even better.
+             */
             if (ThrsafeExchange(&stage4CallContext->m_SOR_reorderHeadTaken, 1) == 0) {
                 // Process the head
                 const dxQuickStepperLocalContext *localContext = stage4CallContext->m_localContext;
-                ConstraintsReorderingHelper()(stage4CallContext, 0, localContext->m_m - localContext->m_valid_findices);
+                ConstraintsReorderingHelper()(stage4CallContext, 0, localContext->m_m);
             }
-
-            if (ThrsafeExchange(&stage4CallContext->m_SOR_reorderTailTaken, 1) == 0) {
-                // Process the tail
-                const dxQuickStepperLocalContext *localContext = stage4CallContext->m_localContext;
-                ConstraintsReorderingHelper()(stage4CallContext, localContext->m_m - localContext->m_valid_findices, localContext->m_valid_findices);
-            }
-        }
-        else {
-            dIASSERT(iteration % RANDOM_CONSTRAINTS_REORDERING_FREQUENCY == RRS_REVERSAL);
-
-            // Revert to the normal order on the next step after the shuffling
-            dxQuickStepIsland_Stage4LCP_ReorderPrep(stage4CallContext);
         }
         dIASSERT((RRS__MAX, true)); // A reference to RRS__MAX to be located by Find in Files
     }
@@ -2936,35 +2928,29 @@ void dxQuickStepIsland_Stage4b(dxQuickStepperStage4CallContext *stage4CallContex
         unsigned ji_step;
         while ((ji_step = ThrsafeIncrementIntUpToLimit(&stage4CallContext->m_ji_4b, nj_steps)) != nj_steps) {
             unsigned int ji = ji_step * step_size;
-            const dReal *lambdacurr = lambda + mindex[ji].mIndex;
+            const unsigned int jiend = ji + dMIN(step_size, nj - ji);
+
             const dReal *Jcopycurr = Jcopy + (sizeint)mindex[ji].fbIndex * JCE__MAX;
-            const dJointWithInfo1 *jicurr = jointinfos + ji;
-            const dJointWithInfo1 *const jiend = jicurr + dMIN(step_size, nj - ji);
 
             while (true) {
-                dxJoint *joint = jicurr->joint;
-                unsigned int infom = jicurr->info.m;
-#ifdef WARM_STARTING
-                memcpy(joint->lambda, lambdacurr, infom * sizeof(dReal));
-#endif
-
                 // straightforward computation of joint constraint forces:
                 // multiply related lambdas with respective J' block for joints
                 // where feedback was requested
-                dJointFeedback *fb = joint->feedback;
-                if (fb != NULL) {
-                    Multiply1_12q1 (data, Jcopycurr + JCE__J1_MIN, lambdacurr, infom);
-                    dSASSERT(JCE__MAX == 12);
+                const unsigned int fb_infom = mindex[ji + 1].fbIndex - mindex[ji].fbIndex;
+                if (fb_infom != 0) {
+                    dIASSERT(fb_infom == mindex[ji + 1].mIndex - mindex[ji].mIndex);
 
-                    fb->f1[dSA_X] = data[JVE_LX];
-                    fb->f1[dSA_Y] = data[JVE_LY];
-                    fb->f1[dSA_Z] = data[JVE_LZ];
-                    fb->t1[dSA_X] = data[JVE_AX];
-                    fb->t1[dSA_Y] = data[JVE_AY];
-                    fb->t1[dSA_Z] = data[JVE_AZ];
+                    const dReal *lambdacurr = lambda + mindex[ji].mIndex;
+                    dxJoint *joint = jointinfos[ji].joint;
+
+#ifdef WARM_STARTING
+                    memcpy(joint->lambda, lambdacurr, fb_infom * sizeof(dReal));
+#endif
+
+                    dJointFeedback *fb = joint->feedback;
 
                     if (joint->node[1].body) {
-                        Multiply1_12q1 (data, Jcopycurr + JCE__J2_MIN, lambdacurr, infom);
+                        Multiply1_12q1 (data, Jcopycurr + JCE__J2_MIN, lambdacurr, fb_infom);
                         dSASSERT(JCE__MAX == 12);
 
                         fb->f2[dSA_X] = data[JVE_LX];
@@ -2975,13 +2961,30 @@ void dxQuickStepIsland_Stage4b(dxQuickStepperStage4CallContext *stage4CallContex
                         fb->t2[dSA_Z] = data[JVE_AZ];
                     }
 
-                    Jcopycurr += infom * JCE__MAX;
+                    Multiply1_12q1 (data, Jcopycurr + JCE__J1_MIN, lambdacurr, fb_infom);
+                    dSASSERT(JCE__MAX == 12);
+
+                    fb->f1[dSA_X] = data[JVE_LX];
+                    fb->f1[dSA_Y] = data[JVE_LY];
+                    fb->f1[dSA_Z] = data[JVE_LZ];
+                    fb->t1[dSA_X] = data[JVE_AX];
+                    fb->t1[dSA_Y] = data[JVE_AY];
+                    fb->t1[dSA_Z] = data[JVE_AZ];
+
+                    Jcopycurr += fb_infom * JCE__MAX;
+                }
+                else {
+#ifdef WARM_STARTING
+                    const dReal *lambdacurr = lambda + mindex[ji].mIndex;
+                    const unsigned int infom = mindex[ji + 1].mIndex - mindex[ji].mIndex;
+                    dxJoint *joint = jointinfos[ji].joint;
+                    memcpy(joint->lambda, lambdacurr, infom * sizeof(dReal));
+#endif
                 }
 
-                if (++jicurr == jiend) {
+                if (++ji == jiend) {
                     break;
                 }
-                lambdacurr += infom;
             }
         }
     }
