@@ -32,14 +32,13 @@
 
 
 //<---- Convex Object
-dReal planes[]= // planes for a cube, these should coincide with the face array
-  {
-    1.0f ,0.0f ,0.0f ,0.25f,
-    0.0f ,1.0f ,0.0f ,0.25f,
-    0.0f ,0.0f ,1.0f ,0.25f,
-    -1.0f,0.0f ,0.0f ,0.25f,
-    0.0f ,-1.0f,0.0f ,0.25f,
-    0.0f ,0.0f ,-1.0f,0.25f
+dReal planes[]= { // planes for a cube, these should coincide with the face array
+    1.0f,0.0f,0.0f,0.25f,
+    0.0f,1.0f,0.0f,0.25f,
+    0.0f,0.0f,1.0f,0.25f,
+    -1.0f,0.0f,0.0f,0.25f,
+    0.0f,-1.0f,0.0f,0.25f,
+    0.0f,0.0f,-1.0f,0.25f
     /*
     1.0f ,0.0f ,0.0f ,2.0f,
     0.0f ,1.0f ,0.0f ,1.0f,
@@ -48,11 +47,10 @@ dReal planes[]= // planes for a cube, these should coincide with the face array
     0.0f ,-1.0f,0.0f ,1.0f,
     -1.0f,0.0f ,0.0f ,0.0f
     */
-  };
+};
 const unsigned int planecount=6;
 
-dReal points[]= // points for a cube
-  {
+dReal points[]= { // points for a cube
     0.25f,0.25f,0.25f,  //  point 0
     -0.25f,0.25f,0.25f, //  point 1
 
@@ -64,17 +62,16 @@ dReal points[]= // points for a cube
 
     0.25f,-0.25f,-0.25f,//  point 6
     -0.25f,-0.25f,-0.25f,// point 7
-  };
+};
 const unsigned int pointcount=8;
-unsigned int polygons[] = //Polygons for a cube (6 squares)
-  {
+unsigned int polygons[] = { //Polygons for a cube (6 squares)
     4,0,2,6,4, // positive X
     4,1,0,4,5, // positive Y
     4,0,1,3,2, // positive Z
     4,3,1,5,7, // negative X
     4,2,3,7,6, // negative Y
     4,5,4,6,7, // negative Z
-  };
+};
 //----> Convex Object
 
 // select correct drawing functions
@@ -100,8 +97,8 @@ unsigned int polygons[] = //Polygons for a cube (6 squares)
 // dynamics and collision objects
 
 struct MyObject {
-  dBodyID body;			// the body
-  dGeomID geom[GPB];		// geometries representing this body
+    dBodyID body;			// the body
+    dGeomID geom[GPB];		// geometries representing this body
 };
 
 static int num=0;		// number of objects in simulation
@@ -118,8 +115,8 @@ static int write_world = 0;
 static int show_body = 0;
 
 struct MyFeedback {
-  dJointFeedback fb;
-  bool first;
+    dJointFeedback fb;
+    bool first;
 };
 static int doFeedback=0;
 static MyFeedback feedbacks[MAX_FEEDBACKNUM];
@@ -128,7 +125,7 @@ static int fbnum=0;
 // this is called by dSpaceCollide when two objects in space are
 // potentially colliding.
 
-static void nearCallback (void *, dGeomID o1, dGeomID o2)
+static void nearCallback(void *, dGeomID o1, dGeomID o2)
 {
     int i;
     // if (o1->body && o2->body) return;
@@ -137,11 +134,11 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
     dBodyID b1 = dGeomGetBody(o1);
     dBodyID b2 = dGeomGetBody(o2);
 
-    if (b1 && b2 && dAreConnectedExcluding(b1,b2,dJointTypeContact))
+    if(b1 && b2 && dAreConnectedExcluding(b1,b2,dJointTypeContact))
         return;
 
     dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
-    for (i=0; i<MAX_CONTACTS; i++) {
+    for(i=0; i<MAX_CONTACTS; i++) {
         contact[i].surface.mode = dContactBounce | dContactSoftCFM;
         contact[i].surface.mu = dInfinity;
         contact[i].surface.mu2 = 0;
@@ -149,24 +146,24 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
         contact[i].surface.bounce_vel = 0.1;
         contact[i].surface.soft_cfm = 0.01;
     }
-    if (int numc = dCollide(o1,o2,MAX_CONTACTS,&contact[0].geom,
-                            sizeof(dContact))) {
+    if(int numc = dCollide(o1,o2,MAX_CONTACTS,&contact[0].geom,
+                           sizeof(dContact))) {
         dMatrix3 RI;
-        dRSetIdentity (RI);
+        dRSetIdentity(RI);
         const dReal ss[3] = {0.02,0.02,0.02};
-        for (i=0; i<numc; i++) {
-            dJointID c = dJointCreateContact (world,contactgroup,contact+i);
-            dJointAttach (c,b1,b2);
-            if (show_contacts) {
+        for(i=0; i<numc; i++) {
+            dJointID c = dJointCreateContact(world,contactgroup,contact+i);
+            dJointAttach(c,b1,b2);
+            if(show_contacts) {
                 dsSetColor(0,0,1);
                 dsDrawBox(contact[i].geom.pos,RI,ss);
             }
-            if (doFeedback && (b1==obj[selected].body || b2==obj[selected].body)) {
-                if (fbnum<MAX_FEEDBACKNUM) {
+            if(doFeedback && (b1==obj[selected].body || b2==obj[selected].body)) {
+                if(fbnum<MAX_FEEDBACKNUM) {
                     feedbacks[fbnum].first = b1==obj[selected].body;
                     dJointSetFeedback(c,&feedbacks[fbnum++].fb);
-                }
-                else fbnum++;
+                } else
+                    fbnum++;
             }
         }
     }
@@ -181,31 +178,33 @@ static void start()
 
     float xyz[3] = {2.1640f,-1.3079f,1.7600f};
     float hpr[3] = {125.5000f,-17.0000f,0.0000f};
-    dsSetViewpoint (xyz,hpr);
+    dsSetViewpoint(xyz,hpr);
 
-    printf ("To drop another object, press:\n");
-    printf ("   b for box.\n");
-    printf ("   s for sphere.\n");
-    printf ("   c for capsule.\n");
-    printf ("   y for cylinder.\n");
-    printf ("   v for a convex object.\n");
-    printf ("   x for a composite object.\n");
-    printf ("To select an object, press space.\n");
-    printf ("To disable the selected object, press d.\n");
-    printf ("To enable the selected object, press e.\n");
-    printf ("To dump transformation data for the selected object, press p.\n");
-    printf ("To toggle showing the geom AABBs, press a.\n");
-    printf ("To toggle showing the contact points, press t.\n");
-    printf ("To toggle dropping from random position/orientation, press r.\n");
-    printf ("To save the current state to 'state.dif', press 1.\n");
-    printf ("To show joint feedbacks of selected object, press f.\n");
+    printf("To drop another object, press:\n");
+    printf("   b for box.\n");
+    printf("   s for sphere.\n");
+    printf("   c for capsule.\n");
+    printf("   y for cylinder.\n");
+    printf("   v for a convex object.\n");
+    printf("   x for a composite object.\n");
+    printf("To select an object, press space.\n");
+    printf("To disable the selected object, press d.\n");
+    printf("To enable the selected object, press e.\n");
+    printf("To dump transformation data for the selected object, press p.\n");
+    printf("To toggle showing the geom AABBs, press a.\n");
+    printf("To toggle showing the contact points, press t.\n");
+    printf("To toggle dropping from random position/orientation, press r.\n");
+    printf("To save the current state to 'state.dif', press 1.\n");
+    printf("To show joint feedbacks of selected object, press f.\n");
 }
 
 
 static char locase(char c)
 {
-  if (c >= 'A' && c <= 'Z') return c - ('a'-'A');
-  else return c;
+    if(c >= 'A' && c <= 'Z')
+        return c - ('a'-'A');
+    else
+        return c;
 }
 
 
@@ -220,8 +219,8 @@ static void command(int cmd)
     bool setBody = false;
 
     cmd = locase(cmd);
-    if (cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'y' || cmd == 'v') {
-        if (num < NUM) {
+    if(cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'y' || cmd == 'v') {
+        if(num < NUM) {
             // new object to be created
             i = num;
             num++;
@@ -231,11 +230,11 @@ static void command(int cmd)
             nextobj %= num; // wrap-around if needed
 
             // destroy the body and geoms for slot i
-            dBodyDestroy (obj[i].body);
+            dBodyDestroy(obj[i].body);
             obj[i].body = 0;
 
-            for (k=0; k < GPB; k++)
-                if (obj[i].geom[k]) {
+            for(k=0; k < GPB; k++)
+                if(obj[i].geom[k]) {
                     dGeomDestroy(obj[i].geom[k]);
                     obj[i].geom[k] = 0;
                 }
@@ -243,11 +242,11 @@ static void command(int cmd)
 
         obj[i].body = dBodyCreate(world);
 
-        for (k=0; k<3; k++)
+        for(k=0; k<3; k++)
             sides[k] = dRandReal()*0.5+0.1;
 
         dMatrix3 R;
-        if (random_pos)  {
+        if(random_pos)  {
             dBodySetPosition(obj[i].body,
                              dRandReal()*2-1,dRandReal()*2-1,dRandReal()+2);
             dRFromAxisAndAngle(R,dRandReal()*2.0-1.0,dRandReal()*2.0-1.0,
@@ -255,9 +254,9 @@ static void command(int cmd)
         } else {
             // higher than highest body position
             dReal maxheight = 0;
-            for (k=0; k<num; k++) {
+            for(k=0; k<num; k++) {
                 const dReal *pos = dBodyGetPosition(obj[k].body);
-                if (pos[2] > maxheight)
+                if(pos[2] > maxheight)
                     maxheight = pos[2];
             }
             dBodySetPosition(obj[i].body, 0,0,maxheight+1);
@@ -267,18 +266,18 @@ static void command(int cmd)
 
         dBodySetRotation(obj[i].body,R);
 
-        if (cmd == 'b') {
+        if(cmd == 'b') {
 
             dMassSetBox(&m,DENSITY,sides[0],sides[1],sides[2]);
             obj[i].geom[0] = dCreateBox(space,sides[0],sides[1],sides[2]);
 
-        } else if (cmd == 'c') {
+        } else if(cmd == 'c') {
 
             sides[0] *= 0.5;
             dMassSetCapsule(&m,DENSITY,3,sides[0],sides[1]);
-            obj[i].geom[0] = dCreateCapsule (space,sides[0],sides[1]);
+            obj[i].geom[0] = dCreateCapsule(space,sides[0],sides[1]);
 
-        } else if (cmd == 'v') {
+        } else if(cmd == 'v') {
 
             dMassSetBox(&m,DENSITY,0.25,0.25,0.25);
 #if 0
@@ -297,38 +296,38 @@ static void command(int cmd)
                                            Sphere_polygons);
 #endif
 
-        } else if (cmd == 'y') {
+        } else if(cmd == 'y') {
 
             dMassSetCylinder(&m,DENSITY,3,sides[0],sides[1]);
             obj[i].geom[0] = dCreateCylinder(space,sides[0],sides[1]);
 
-        } else if (cmd == 's') {
+        } else if(cmd == 's') {
 
             sides[0] *= 0.5;
-            dMassSetSphere (&m,DENSITY,sides[0]);
-            obj[i].geom[0] = dCreateSphere (space,sides[0]);
+            dMassSetSphere(&m,DENSITY,sides[0]);
+            obj[i].geom[0] = dCreateSphere(space,sides[0]);
 
-        } else if (cmd == 'x') {
+        } else if(cmd == 'x') {
 
             setBody = true;
             // start accumulating masses for the composite geometries
             dMass m2;
-            dMassSetZero (&m);
+            dMassSetZero(&m);
 
             dReal dpos[GPB][3];	// delta-positions for composite geometries
             dMatrix3 drot[GPB];
 
             // set random delta positions
-            for (j=0; j<GPB; j++)
-                for (k=0; k<3; k++)
+            for(j=0; j<GPB; j++)
+                for(k=0; k<3; k++)
                     dpos[j][k] = dRandReal()*0.3-0.15;
 
-            for (k=0; k<GPB; k++) {
-                if (k==0) {
+            for(k=0; k<GPB; k++) {
+                if(k==0) {
                     dReal radius = dRandReal()*0.25+0.05;
-                    obj[i].geom[k] = dCreateSphere (space,radius);
-                    dMassSetSphere (&m2,DENSITY,radius);
-                } else if (k==1) {
+                    obj[i].geom[k] = dCreateSphere(space,radius);
+                    dMassSetSphere(&m2,DENSITY,radius);
+                } else if(k==1) {
                     obj[i].geom[k] = dCreateBox(space,sides[0],sides[1],sides[2]);
                     dMassSetBox(&m2,DENSITY,sides[0],sides[1],sides[2]);
                 } else {
@@ -348,7 +347,7 @@ static void command(int cmd)
                 dMassAdd(&m,&m2);
 
             }
-            for (k=0; k<GPB; k++) {
+            for(k=0; k<GPB; k++) {
                 dGeomSetBody(obj[i].geom[k],obj[i].body);
                 dGeomSetOffsetPosition(obj[i].geom[k],
                                        dpos[k][0]-m.c[0],
@@ -361,47 +360,47 @@ static void command(int cmd)
 
         }
 
-        if (!setBody) { // avoid calling for composite geometries
-            for (k=0; k < GPB; k++)
-                if (obj[i].geom[k])
+        if(!setBody) {  // avoid calling for composite geometries
+            for(k=0; k < GPB; k++)
+                if(obj[i].geom[k])
                     dGeomSetBody(obj[i].geom[k],obj[i].body);
 
             dBodySetMass(obj[i].body,&m);
         }
     }
 
-    if (cmd == ' ') {
+    if(cmd == ' ') {
 
         selected++;
-        if (selected >= num)
+        if(selected >= num)
             selected = 0;
-        if (selected == -1)
+        if(selected == -1)
             selected = 0;
 
-    } else if (cmd == 'd' && selected >= 0 && selected < num) {
+    } else if(cmd == 'd' && selected >= 0 && selected < num) {
 
         dBodyDisable(obj[selected].body);
 
-    } else if (cmd == 'e' && selected >= 0 && selected < num) {
+    } else if(cmd == 'e' && selected >= 0 && selected < num) {
 
         dBodyEnable(obj[selected].body);
 
-    } else if (cmd == 'a') {
+    } else if(cmd == 'a') {
 
         show_aabb = !show_aabb;
 
-    } else if (cmd == 't') {
+    } else if(cmd == 't') {
 
         show_contacts = !show_contacts;
 
-    } else if (cmd == 'r') {
+    } else if(cmd == 'r') {
 
         random_pos = !random_pos;
-    } else if (cmd == '1') {
+    } else if(cmd == '1') {
 
         write_world = 1;
 
-    } else if (cmd == 'p'&& selected >= 0) {
+    } else if(cmd == 'p'&& selected >= 0) {
 
         const dReal* pos = dGeomGetPosition(obj[selected].geom[0]);
         const dReal* rot = dGeomGetRotation(obj[selected].geom[0]);
@@ -411,9 +410,9 @@ static void command(int cmd)
                rot[4],rot[5],rot[6],rot[7],
                rot[8],rot[9],rot[10],rot[11]);
 
-    } else if (cmd == 'f' && selected >= 0 && selected < num) {
+    } else if(cmd == 'f' && selected >= 0 && selected < num) {
 
-        if (dBodyIsEnabled(obj[selected].body))
+        if(dBodyIsEnabled(obj[selected].body))
             doFeedback = 1;
 
     }
@@ -426,48 +425,48 @@ void drawGeom(dGeomID g, const dReal *pos, const dReal *R, int show_aabb)
 {
     int i;
 
-    if (!g)
+    if(!g)
         return;
-    if (!pos)
+    if(!pos)
         pos = dGeomGetPosition(g);
-    if (!R)
+    if(!R)
         R = dGeomGetRotation(g);
 
     int type = dGeomGetClass(g);
-    if (type == dBoxClass) {
+    if(type == dBoxClass) {
 
         dVector3 sides;
-        dGeomBoxGetLengths (g,sides);
+        dGeomBoxGetLengths(g,sides);
         dsDrawBox(pos,R,sides);
 
-    } else if (type == dSphereClass) {
+    } else if(type == dSphereClass) {
 
         dsDrawSphere(pos,R,dGeomSphereGetRadius(g));
 
-    } else if (type == dCapsuleClass) {
+    } else if(type == dCapsuleClass) {
 
         dReal radius,length;
         dGeomCapsuleGetParams(g,&radius,&length);
         dsDrawCapsule(pos,R,length,radius);
 
-    } else if (type == dConvexClass) {
+    } else if(type == dConvexClass) {
 
 #if 0
-      dsDrawConvex(pos,R,planes,
-		   planecount,
-		   points,
-		   pointcount,
-		   polygons);
+        dsDrawConvex(pos,R,planes,
+                     planecount,
+                     points,
+                     pointcount,
+                     polygons);
 #else
-      dsDrawConvex(pos,R,
-                   Sphere_planes,
-		   Sphere_planecount,
-		   Sphere_points,
-		   Sphere_pointcount,
-		   Sphere_polygons);
+        dsDrawConvex(pos,R,
+                     Sphere_planes,
+                     Sphere_planecount,
+                     Sphere_points,
+                     Sphere_pointcount,
+                     Sphere_polygons);
 #endif
 
-    } else if (type == dCylinderClass) {
+    } else if(type == dCylinderClass) {
 
         dReal radius,length;
         dGeomCylinderGetParams(g,&radius,&length);
@@ -475,9 +474,9 @@ void drawGeom(dGeomID g, const dReal *pos, const dReal *R, int show_aabb)
 
     }
 
-    if (show_body) {
+    if(show_body) {
         dBodyID body = dGeomGetBody(g);
-        if (body) {
+        if(body) {
             const dReal *bodypos = dBodyGetPosition(body);
             const dReal *bodyr = dBodyGetRotation(body);
             dReal bodySides[3] = { 0.1, 0.1, 0.1 };
@@ -486,18 +485,18 @@ void drawGeom(dGeomID g, const dReal *pos, const dReal *R, int show_aabb)
         }
     }
 
-    if (show_aabb) {
+    if(show_aabb) {
         // draw the bounding box for this geom
         dReal aabb[6];
         dGeomGetAABB(g,aabb);
         dVector3 bbpos;
-        for (i=0; i<3; i++)
+        for(i=0; i<3; i++)
             bbpos[i] = 0.5*(aabb[i*2] + aabb[i*2+1]);
         dVector3 bbsides;
-        for (i=0; i<3; i++)
+        for(i=0; i<3; i++)
             bbsides[i] = aabb[i*2+1] - aabb[i*2];
         dMatrix3 RI;
-        dRSetIdentity (RI);
+        dRSetIdentity(RI);
         dsSetColorAlpha(1,0,0,0.5);
         dsDrawBox(bbpos,RI,bbsides);
     }
@@ -510,26 +509,26 @@ static void simLoop(int pause)
 {
     dSpaceCollide(space, 0, &nearCallback);
 
-    if (!pause)
+    if(!pause)
         dWorldQuickStep(world, 0.02);
 
-    if (write_world) {
+    if(write_world) {
         FILE *f = fopen("state.dif","wt");
-        if (f) {
+        if(f) {
             dWorldExportDIF(world,f,"X");
-            fclose (f);
+            fclose(f);
         }
         write_world = 0;
     }
 
 
-    if (doFeedback) {
-        if (fbnum>MAX_FEEDBACKNUM)
+    if(doFeedback) {
+        if(fbnum>MAX_FEEDBACKNUM)
             printf("joint feedback buffer overflow!\n");
         else {
             dVector3 sum = {0, 0, 0};
             printf("\n");
-            for (int i=0; i<fbnum; i++) {
+            for(int i=0; i<fbnum; i++) {
                 dReal* f = feedbacks[i].first?feedbacks[i].fb.f1:feedbacks[i].fb.f2;
                 printf("%f %f %f\n", f[0], f[1], f[2]);
                 sum[0] += f[0];
@@ -549,11 +548,11 @@ static void simLoop(int pause)
     dJointGroupEmpty(contactgroup);
 
     dsSetTexture(DS_WOOD);
-    for (int i=0; i<num; i++) {
-        for (int j=0; j < GPB; j++) {
-            if (i==selected) {
+    for(int i=0; i<num; i++) {
+        for(int j=0; j < GPB; j++) {
+            if(i==selected) {
                 dsSetColor(0,0.7,1);
-            } else if (!dBodyIsEnabled(obj[i].body)) {
+            } else if(!dBodyIsEnabled(obj[i].body)) {
                 dsSetColor(1,0.8,0);
             } else {
                 dsSetColor(1,1,0);
@@ -564,7 +563,7 @@ static void simLoop(int pause)
 }
 
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     // setup pointers to drawstuff callback functions
     dsFunctions fn;
@@ -586,7 +585,7 @@ int main (int argc, char **argv)
 
 #if 1
 
-    dWorldSetAutoDisableAverageSamplesCount( world, 10 );
+    dWorldSetAutoDisableAverageSamplesCount(world, 10);
 
 #endif
 
