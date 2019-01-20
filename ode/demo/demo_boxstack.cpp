@@ -63,7 +63,7 @@ dReal points[]= // points for a cube
     -0.25f,0.25f,-0.25f,//  point 5
 
     0.25f,-0.25f,-0.25f,//  point 6
-    -0.25f,-0.25f,-0.25f,// point 7 
+    -0.25f,-0.25f,-0.25f,// point 7
   };
 const unsigned int pointcount=8;
 unsigned int polygons[] = //Polygons for a cube (6 squares)
@@ -71,7 +71,7 @@ unsigned int polygons[] = //Polygons for a cube (6 squares)
     4,0,2,6,4, // positive X
     4,1,0,4,5, // positive Y
     4,0,1,3,2, // positive Z
-    4,3,1,5,7, // negative X 
+    4,3,1,5,7, // negative X
     4,2,3,7,6, // negative Y
     4,5,4,6,7, // negative Z
   };
@@ -179,9 +179,10 @@ static void start()
 {
     dAllocateODEDataForThread(dAllocateMaskAll);
 
-    static float xyz[3] = {2.1640f,-1.3079f,1.7600f};
-    static float hpr[3] = {125.5000f,-17.0000f,0.0000f};
+    float xyz[3] = {2.1640f,-1.3079f,1.7600f};
+    float hpr[3] = {125.5000f,-17.0000f,0.0000f};
     dsSetViewpoint (xyz,hpr);
+
     printf ("To drop another object, press:\n");
     printf ("   b for box.\n");
     printf ("   s for sphere.\n");
@@ -316,12 +317,12 @@ static void command(int cmd)
 
             dReal dpos[GPB][3];	// delta-positions for composite geometries
             dMatrix3 drot[GPB];
-      
+
             // set random delta positions
             for (j=0; j<GPB; j++)
                 for (k=0; k<3; k++)
                     dpos[j][k] = dRandReal()*0.3-0.15;
-    
+
             for (k=0; k<GPB; k++) {
                 if (k==0) {
                     dReal radius = dRandReal()*0.25+0.05;
@@ -340,7 +341,7 @@ static void command(int cmd)
                 dRFromAxisAndAngle(drot[k],dRandReal()*2.0-1.0,dRandReal()*2.0-1.0,
                                    dRandReal()*2.0-1.0,dRandReal()*10.0-5.0);
                 dMassRotate(&m2,drot[k]);
-		
+
                 dMassTranslate(&m2,dpos[k][0],dpos[k][1],dpos[k][2]);
 
                 // add to the total mass
@@ -424,7 +425,7 @@ static void command(int cmd)
 void drawGeom(dGeomID g, const dReal *pos, const dReal *R, int show_aabb)
 {
     int i;
-	
+
     if (!g)
         return;
     if (!pos)
@@ -477,11 +478,11 @@ void drawGeom(dGeomID g, const dReal *pos, const dReal *R, int show_aabb)
     if (show_body) {
         dBodyID body = dGeomGetBody(g);
         if (body) {
-            const dReal *bodypos = dBodyGetPosition(body); 
-            const dReal *bodyr = dBodyGetRotation(body); 
+            const dReal *bodypos = dBodyGetPosition(body);
+            const dReal *bodyr = dBodyGetRotation(body);
             dReal bodySides[3] = { 0.1, 0.1, 0.1 };
             dsSetColorAlpha(0,1,0,1);
-            dsDrawBox(bodypos,bodyr,bodySides); 
+            dsDrawBox(bodypos,bodyr,bodySides);
         }
     }
 
