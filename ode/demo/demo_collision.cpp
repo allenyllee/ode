@@ -1291,8 +1291,8 @@ static void start()
 {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
-  float xyz[3] = {2.4807,-1.8023,2.7600};
-  float hpr[3] = {141.5000,-18.5000,0.0000};
+  static float xyz[3] = {2.4807,-1.8023,2.7600};
+  static float hpr[3] = {141.5000,-18.5000,0.0000};
   dsSetViewpoint (xyz,hpr);
 }
 

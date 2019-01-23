@@ -93,8 +93,8 @@ void start()
 
 
     // initial camera position
-    float xyz[3] = {3.8966, -2.0614, 4.0300};
-    float hpr[3] = {153.5, -16.5, 0};
+    static float xyz[3] = {3.8966, -2.0614, 4.0300};
+    static float hpr[3] = {153.5, -16.5, 0};
     dsSetViewpoint (xyz,hpr);
 }
 
