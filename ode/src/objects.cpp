@@ -69,9 +69,14 @@ dxDampingParameters::dxDampingParameters(void *):
 }
 
 dxQuickStepParameters::dxQuickStepParameters(void *):
-    num_iterations(20),
+    num_iterations(dWORLDQUICKSTEP_ITERATION_COUNT_DEFAULT),
+    max_num_extra_iterations(DeriveExtraIterationCount(dWORLDQUICKSTEP_ITERATION_COUNT_DEFAULT, dWORLDQUICKSTEP_MAXIMAL_EXTRA_ITERATION_COUNT_FACTOR_DEFAULT)),
+    max_num_extra_factor(dWORLDQUICKSTEP_MAXIMAL_EXTRA_ITERATION_COUNT_FACTOR_DEFAULT),
     w(REAL(1.3))
 {
+    marginal_delta_values[MDK_EXTRA_ITERATIONS_REQUIREMENT_DELTA] = dWORLDQUICKSTEP_EXTRA_ITERATION_REQUIREMENT_DELTA_DEFAULT;
+    marginal_delta_values[MDK_PREMATURE_EXIT_DELTA] = dWORLDQUICKSTEP_ITERATION_REMATURE_EXIT_DELTA_DEFAULT;
+    dSASSERT(MDK__MAX == 2);
 }
 
 dxContactParameters::dxContactParameters(void *):

@@ -370,46 +370,59 @@ enum dxInvMJTElement
 
     IMJ__1_MIN = IMJ__MIN,
     
-    IMJ__1L_MIN = IMJ__1_MIN + JVE__L_MIN,
-
-    IMJ_1LX = IMJ__1_MIN + JVE_LX,
-    IMJ_1LY = IMJ__1_MIN + JVE_LY,
-    IMJ_1LZ = IMJ__1_MIN + JVE_LZ,
-
-    IMJ__1L_MAX = IMJ__1_MIN + JVE__L_MAX,
-
-    IMJ__1A_MIN = IMJ__1_MIN + JVE__A_MIN,
-
-    IMJ_1AX = IMJ__1_MIN + JVE_AX,
-    IMJ_1AY = IMJ__1_MIN + JVE_AY,
-    IMJ_1AZ = IMJ__1_MIN + JVE_AZ,
-
-    IMJ__1A_MAX = IMJ__1_MIN + JVE__A_MAX,
+    IMJ__1JVE_MIN = IMJ__1_MIN,
     
-    IMJ__1_MAX = IMJ__1_MIN + JVE__MAX,
+    IMJ__1L_MIN = IMJ__1JVE_MIN + JVE__L_MIN,
+
+    IMJ_1LX = IMJ__1JVE_MIN + JVE_LX,
+    IMJ_1LY = IMJ__1JVE_MIN + JVE_LY,
+    IMJ_1LZ = IMJ__1JVE_MIN + JVE_LZ,
+
+    IMJ__1L_MAX = IMJ__1JVE_MIN + JVE__L_MAX,
+
+    IMJ__1A_MIN = IMJ__1JVE_MIN + JVE__A_MIN,
+
+    IMJ_1AX = IMJ__1JVE_MIN + JVE_AX,
+    IMJ_1AY = IMJ__1JVE_MIN + JVE_AY,
+    IMJ_1AZ = IMJ__1JVE_MIN + JVE_AZ,
+
+    IMJ__1A_MAX = IMJ__1JVE_MIN + JVE__A_MAX,
+
+    IMJ__1JVE_MAX = IMJ__1JVE_MIN + JVE__MAX,
+    
+    IMJ_1JVE_MAXABS,
+
+    IMJ__1_MAX,
 
     IMJ__2_MIN = IMJ__1_MAX,
 
-    IMJ__2L_MIN = IMJ__2_MIN + JVE__L_MIN,
+    IMJ__2JVE_MIN = IMJ__2_MIN,
 
-    IMJ_2LX = IMJ__2_MIN + JVE_LX,
-    IMJ_2LY = IMJ__2_MIN + JVE_LY,
-    IMJ_2LZ = IMJ__2_MIN + JVE_LZ,
+    IMJ__2L_MIN = IMJ__2JVE_MIN + JVE__L_MIN,
 
-    IMJ__2L_MAX = IMJ__2_MIN + JVE__L_MAX,
+    IMJ_2LX = IMJ__2JVE_MIN + JVE_LX,
+    IMJ_2LY = IMJ__2JVE_MIN + JVE_LY,
+    IMJ_2LZ = IMJ__2JVE_MIN + JVE_LZ,
 
-    IMJ__2A_MIN = IMJ__2_MIN + JVE__A_MIN,
+    IMJ__2L_MAX = IMJ__2JVE_MIN + JVE__L_MAX,
 
-    IMJ_2AX = IMJ__2_MIN + JVE_AX,
-    IMJ_2AY = IMJ__2_MIN + JVE_AY,
-    IMJ_2AZ = IMJ__2_MIN + JVE_AZ,
+    IMJ__2A_MIN = IMJ__2JVE_MIN + JVE__A_MIN,
 
-    IMJ__2A_MAX = IMJ__2_MIN + JVE__A_MAX,
+    IMJ_2AX = IMJ__2JVE_MIN + JVE_AX,
+    IMJ_2AY = IMJ__2JVE_MIN + JVE_AY,
+    IMJ_2AZ = IMJ__2JVE_MIN + JVE_AZ,
 
-    IMJ__2_MAX = IMJ__2_MIN + JVE__MAX,
+    IMJ__2A_MAX = IMJ__2JVE_MIN + JVE__A_MAX,
+
+    IMJ__2JVE_MAX = IMJ__2JVE_MIN + JVE__MAX,
+
+    IMJ_2JVE_MAXABS,
+    
+    IMJ__2_MAX,
 
     IMJ__MAX = IMJ__2_MAX,
 };
+
 
 enum dxContactForceElement
 {
@@ -659,6 +672,7 @@ struct dxQuickStepperStage4CallContext
         m_mi_fc = 0;
         m_mi_Ad = 0;
         m_LCP_iteration = 0;
+        m_LCP_extra_num_iterations = 0;
         m_cf_4b = 0;
         m_ji_4b = 0;
     }
@@ -703,6 +717,38 @@ struct dxQuickStepperStage4CallContext
         m_LCP_iterationNextReleasee = nextReleasee;
     }
 
+    union AtomicFloatUnion
+    {
+        AtomicFloatUnion(float floatValue) : m_floatValue(floatValue) {}
+        explicit AtomicFloatUnion(atomicord32 valueAsAtomicOrdinal) : m_atomicOrdinalValue(valueAsAtomicOrdinal) {}
+
+        float           m_floatValue;
+        atomicord32     m_atomicOrdinalValue;
+    };
+    dSASSERT(sizeof(AtomicFloatUnion) == sizeof(atomicord32));
+
+    void UnsafelyAssignLCPMaxAdjustment(dReal maxAdjustment) { m_LCP_maxAdjustment = (float)maxAdjustment; }
+    void SafelyAccumulateLCPMaxAdjustment(dReal maxAdjustment)
+    {
+        float maxAdjustmentAsFloat = (float)maxAdjustment;
+        
+        bool abandonExchange = false;
+
+        atomicord32 existingValueAsOrdinal = const_cast<volatile atomicord32 &>(m_LCP_maxAdjustment.m_atomicOrdinalValue);
+        if (!(maxAdjustmentAsFloat > AtomicFloatUnion(existingValueAsOrdinal).m_floatValue)) {
+            abandonExchange = true;
+        }
+
+        atomicord32 maxAdjustmentAsOrdinal = !abandonExchange ? AtomicFloatUnion(maxAdjustmentAsFloat).m_atomicOrdinalValue : 0;
+
+        for (; !abandonExchange; abandonExchange = !(maxAdjustmentAsFloat > AtomicFloatUnion(existingValueAsOrdinal).m_floatValue)) {
+            if (AtomicCompareExchange(&m_LCP_maxAdjustment.m_atomicOrdinalValue, existingValueAsOrdinal, maxAdjustmentAsOrdinal)) {
+                break;
+            }
+            existingValueAsOrdinal = const_cast<volatile atomicord32 &>(m_LCP_maxAdjustment.m_atomicOrdinalValue);
+        }
+    }
+    dReal GetLCPMaxAdjustment() const { return m_LCP_maxAdjustment.m_floatValue; }
 
     const dxStepperProcessingCallContext *m_stepperCallContext;
     const dxQuickStepperLocalContext   *m_localContext;
@@ -722,7 +768,9 @@ struct dxQuickStepperStage4CallContext
     volatile atomicord32            m_LCP_fcPrepareThreadsRemaining;
     unsigned int                    m_LCP_fcCompleteThreadsTotal;
     volatile atomicord32            m_mi_Ad;
+    AtomicFloatUnion                m_LCP_maxAdjustment;
     unsigned int                    m_LCP_iteration;
+    unsigned int                    m_LCP_extra_num_iterations;
     unsigned int                    m_LCP_iterationThreadsTotal;
     volatile atomicord32            m_LCP_iterationThreadsRemaining;
     dCallReleaseeID                 m_LCP_iterationNextReleasee;
@@ -776,7 +824,7 @@ static void dxQuickStepIsland_Stage4LCP_DependencyMapForNewOrderRebuilding(dxQui
 static void dxQuickStepIsland_Stage4LCP_DependencyMapFromSavedLevelsReconstruction(dxQuickStepperStage4CallContext *stage4CallContext);
 static void dxQuickStepIsland_Stage4LCP_MTIteration(dxQuickStepperStage4CallContext *stage4CallContext, unsigned int initiallyKnownToBeCompletedLevel);
 static void dxQuickStepIsland_Stage4LCP_STIteration(dxQuickStepperStage4CallContext *stage4CallContext);
-static void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *stage4CallContext, unsigned int i);
+static void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *stage4CallContext, unsigned int i, dReal &out_maxAdjustment);
 static void dxQuickStepIsland_Stage4b(dxQuickStepperStage4CallContext *stage4CallContext);
 static void dxQuickStepIsland_Stage5(dxQuickStepperStage5CallContext *stage5CallContext);
 
@@ -832,12 +880,14 @@ void compute_invM_JT (volatile atomicord32 *mi_storage, dReal *iMJ,
             for (unsigned int j = 0; j != JVE__L_COUNT; j++) iMJ_ptr[IMJ__1L_MIN + j] = k1 * J_ptr[JME__J1L_MIN + j];
             const dReal *invIrow1 = invI + (sizeint)(unsigned)b1 * IIE__MAX + IIE__MATRIX_MIN;
             dMultiply0_331 (iMJ_ptr + IMJ__1A_MIN, invIrow1, J_ptr + JME__J1A_MIN);
+            iMJ_ptr[IMJ_1JVE_MAXABS] = dxCalculateModuloMaximum(iMJ_ptr + IMJ__1JVE_MIN, JVE__MAX);
 
             if (b2 != -1) {
                 dReal k2 = body[(unsigned)b2]->invMass;
                 for (unsigned int j = 0; j != JVE__L_COUNT; ++j) iMJ_ptr[IMJ__2L_MIN + j] = k2 * J_ptr[JME__J2L_MIN + j];
                 const dReal *invIrow2 = invI + (sizeint)(unsigned)b2 * IIE__MAX + IIE__MATRIX_MIN;
                 dMultiply0_331 (iMJ_ptr + IMJ__2A_MIN, invIrow2, J_ptr + JME__J2A_MIN);
+                iMJ_ptr[IMJ_2JVE_MAXABS] = dxCalculateModuloMaximum(iMJ_ptr + IMJ__2JVE_MIN, JVE__MAX);
             }
         
             if (++mi == miend) {
@@ -917,13 +967,13 @@ void multiply_invM_JT_complete(volatile atomicord32 *bi_storage, dReal *out,
                 const dReal *iMJ_ptr;
                 
                 if (bi == jb[mi].first) {
-                    iMJ_ptr = iMJ + (sizeint)mi * IMJ__MAX + IMJ__1_MIN;
+                    iMJ_ptr = iMJ + (sizeint)mi * IMJ__MAX + IMJ__1JVE_MIN;
                     businessIndex = mi_links[(sizeint)mi * 2];
                 }
                 else {
                     dIASSERT(bi == jb[mi].second);
 
-                    iMJ_ptr = iMJ + (sizeint)mi * IMJ__MAX + IMJ__2_MIN;
+                    iMJ_ptr = iMJ + (sizeint)mi * IMJ__MAX + IMJ__2JVE_MIN;
                     businessIndex = mi_links[(sizeint)mi * 2 + 1];
                 }
 
@@ -945,7 +995,7 @@ void multiply_invM_JT_complete(volatile atomicord32 *bi_storage, dReal *out,
 
 template<unsigned int out_offset, unsigned int out_stride>
 void _multiply_invM_JT (dReal *out, 
-    unsigned int m, unsigned int nb, dReal *iMJ, const dxJBodiesItem *jb, const dReal *in)
+    unsigned int m, unsigned int nb, const dReal *iMJ, const dxJBodiesItem *jb, const dReal *in)
 {
     dSetZero (out, (sizeint)nb * out_stride);
     const dReal *iMJ_ptr = iMJ;
@@ -955,13 +1005,13 @@ void _multiply_invM_JT (dReal *out,
         const dReal in_i = in[i];
 
         dReal *out_ptr = out + (sizeint)(unsigned)b1 * out_stride + out_offset;
-        for (unsigned int j = JVE__MIN; j != JVE__MAX; j++) out_ptr[j - JVE__MIN] += iMJ_ptr[IMJ__1_MIN + j] * in_i;
+        for (unsigned int j = JVE__MIN; j != JVE__MAX; j++) out_ptr[j - JVE__MIN] += iMJ_ptr[IMJ__1JVE_MIN + j] * in_i;
         dSASSERT(out_stride - out_offset >= JVE__MAX);
         dSASSERT(JVE__MAX == (int)dDA__MAX);
 
         if (b2 != -1) {
             out_ptr = out + (sizeint)(unsigned)b2 * out_stride + out_offset;
-            for (unsigned int j = JVE__MIN; j != JVE__MAX; j++) out_ptr[j - JVE__MIN] += iMJ_ptr[IMJ__2_MIN + j] * in_i;
+            for (unsigned int j = JVE__MIN; j != JVE__MAX; j++) out_ptr[j - JVE__MIN] += iMJ_ptr[IMJ__2JVE_MIN + j] * in_i;
             dSASSERT(out_stride - out_offset >= JVE__MAX);
             dSASSERT(JVE__MAX == (int)dDA__MAX);
         }
@@ -1145,30 +1195,30 @@ void dxQuickStepIsland_Stage0_Bodies(dxQuickStepperStage0BodiesCallContext *call
         // since gravity does normally have only one component it's more efficient
         // to run three loops for each individual component
         dxBody *const *const bodyend = body + nb;
-        dReal gravity_x = world->gravity[0];
+        dReal gravity_x = world->gravity[dSA_X];
         if (gravity_x) {
             for (dxBody *const *bodycurr = body; bodycurr != bodyend; bodycurr++) {
                 dxBody *b = *bodycurr;
                 if ((b->flags & dxBodyNoGravity) == 0) {
-                    b->facc[0] += b->mass.mass * gravity_x;
+                    b->facc[dSA_X] += b->mass.mass * gravity_x;
                 }
             }
         }
-        dReal gravity_y = world->gravity[1];
+        dReal gravity_y = world->gravity[dSA_Y];
         if (gravity_y) {
             for (dxBody *const *bodycurr = body; bodycurr != bodyend; bodycurr++) {
                 dxBody *b = *bodycurr;
                 if ((b->flags & dxBodyNoGravity) == 0) {
-                    b->facc[1] += b->mass.mass * gravity_y;
+                    b->facc[dSA_Y] += b->mass.mass * gravity_y;
                 }
             }
         }
-        dReal gravity_z = world->gravity[2];
+        dReal gravity_z = world->gravity[dSA_Z];
         if (gravity_z) {
             for (dxBody *const *bodycurr = body; bodycurr != bodyend; bodycurr++) {
                 dxBody *b = *bodycurr;
                 if ((b->flags & dxBodyNoGravity) == 0) {
-                    b->facc[2] += b->mass.mass * gravity_z;
+                    b->facc[dSA_Z] += b->mass.mass * gravity_z;
                 }
             }
         }
@@ -1710,6 +1760,8 @@ int dxQuickStepIsland_Stage3_Callback(void *_stage3CallContext, dcallindex_t cal
     return 1;
 }
 
+static unsigned g_uiPrematureExits = 0, g_uiProlongedExecs = 0, g_uiIterationIndex = 0;
+
 static 
 void dxQuickStepIsland_Stage3(dxQuickStepperStage3CallContext *stage3CallContext)
 {
@@ -1758,8 +1810,7 @@ void dxQuickStepIsland_Stage3(dxQuickStepperStage3CallContext *stage3CallContext
         dxQuickStepperStage4CallContext *stage4CallContext = (dxQuickStepperStage4CallContext *)memarena->AllocateBlock(sizeof(dxQuickStepperStage4CallContext));
         stage4CallContext->Initialize(callContext, localContext, lambda, cforce, iMJ, order, last_lambda, bi_links_or_mi_levels, mi_links);
 
-        if (singleThreadedExecution)
-        {
+        if (singleThreadedExecution) {
             dxQuickStepIsland_Stage4a(stage4CallContext);
 
             IFTIMING (dTimerNow ("solving LCP problem"));
@@ -1769,20 +1820,48 @@ void dxQuickStepIsland_Stage3(dxQuickStepperStage3CallContext *stage3CallContext
             dxQuickStepIsland_Stage4LCP_ReorderPrep(stage4CallContext);
             
             dxWorld *world = callContext->m_world;
+            const dReal prematureExitDelta = world->qs.marginal_delta_values[MDK_PREMATURE_EXIT_DELTA];
             const unsigned int num_iterations = world->qs.num_iterations;
-            for (unsigned int iteration=0; iteration < num_iterations; iteration++) {
+            for (unsigned int iteration = 0, extra_num_iterations = 0; ; ) {
                 if (IsSORConstraintsReorderRequiredForIteration(iteration)) {
                     stage4CallContext->ResetSOR_ConstraintsReorderVariables(0);
                     dxQuickStepIsland_Stage4LCP_ConstraintsShuffling(stage4CallContext, iteration);
                 }
+
                 dxQuickStepIsland_Stage4LCP_STIteration(stage4CallContext);
+
+                dReal iterationMaxAdjustment = stage4CallContext->GetLCPMaxAdjustment();
+                // Use strict comparison to have zero as a full iteration count enforcement
+                if (iterationMaxAdjustment < prematureExitDelta) {
+                    ++g_uiPrematureExits;
+                    break;
+                }
+
+                if (extra_num_iterations != 0) {
+                    if (iterationMaxAdjustment <= world->qs.marginal_delta_values[MDK_EXTRA_ITERATIONS_REQUIREMENT_DELTA]) {
+                        break;
+                    }
+
+                    if (++iteration - extra_num_iterations == num_iterations) {
+                        break;
+                    }
+                }
+                else {
+                    if (++iteration == num_iterations) {
+                        if (world->qs.max_num_extra_iterations == 0 || iterationMaxAdjustment <= world->qs.marginal_delta_values[MDK_EXTRA_ITERATIONS_REQUIREMENT_DELTA]) {
+                            break;
+                        }
+                        
+                        ++g_uiProlongedExecs;
+                        extra_num_iterations = world->qs.max_num_extra_iterations;
+                    }
+                }
             }
 
             dxQuickStepIsland_Stage4b(stage4CallContext);
             dxQuickStepIsland_Stage5(stage5CallContext);
         }
-        else
-        {
+        else {
             dxWorld *world = callContext->m_world;
 
             dCallReleaseeID stage5CallReleasee;
@@ -2073,7 +2152,7 @@ void dxQuickStepIsland_Stage4LCP_MTfcComputation_warmComplete(dxQuickStepperStag
 
     dReal *fc = stage4CallContext->m_cforce;
     unsigned int nb = callContext->m_islandBodiesCount;
-    dReal *iMJ = stage4CallContext->m_iMJ;
+    const dReal *iMJ = stage4CallContext->m_iMJ;
     const dxJBodiesItem *jb = localContext->m_jb;
     dReal *lambda = stage4CallContext->m_lambda;
 
@@ -2115,7 +2194,7 @@ void dxQuickStepIsland_Stage4LCP_STfcComputation(dxQuickStepperStage4CallContext
     dReal *fc = stage4CallContext->m_cforce;
     unsigned int m = localContext->m_m;
     unsigned int nb = callContext->m_islandBodiesCount;
-    dReal *iMJ = stage4CallContext->m_iMJ;
+    const dReal *iMJ = stage4CallContext->m_iMJ;
     const dxJBodiesItem *jb = localContext->m_jb;
     dReal *lambda = stage4CallContext->m_lambda;
 
@@ -2156,7 +2235,7 @@ void dxQuickStepIsland_Stage4LCP_AdComputation(dxQuickStepperStage4CallContext *
     dxQuickStepParameters *qs = &world->qs;
     const dReal sor_w = qs->w;		// SOR over-relaxation parameter
 
-    dReal *iMJ = stage4CallContext->m_iMJ;
+    const dReal *iMJ = stage4CallContext->m_iMJ;
 
     const unsigned int step_size = dxQUICKSTEPISLAND_STAGE4LCP_AD_STEP;
     unsigned int m_steps = (m + (step_size - 1)) / step_size;
@@ -2171,13 +2250,13 @@ void dxQuickStepIsland_Stage4LCP_AdComputation(dxQuickStepperStage4CallContext *
         while (true) {
             dReal sum = REAL(0.0);
             {
-                for (unsigned int j = JVE__MIN; j != JVE__MAX; ++j) sum += iMJ_ptr[IMJ__1_MIN + j] * J_ptr[JME__J1_MIN + j];
+                for (unsigned int j = JVE__MIN; j != JVE__MAX; ++j) sum += iMJ_ptr[IMJ__1JVE_MIN + j] * J_ptr[JME__J1_MIN + j];
                 dSASSERT(JME__J1_COUNT == (int)JVE__MAX);
             }
 
             int b2 = jb[mi].second;
             if (b2 != -1) {
-                for (unsigned int k = JVE__MIN; k != JVE__MAX; ++k) sum += iMJ_ptr[IMJ__2_MIN + k] * J_ptr[JME__J2_MIN + k];
+                for (unsigned int k = JVE__MIN; k != JVE__MAX; ++k) sum += iMJ_ptr[IMJ__2JVE_MIN + k] * J_ptr[JME__J2_MIN + k];
                 dSASSERT(JME__J2_COUNT == (int)JVE__MAX);
             }
 
@@ -2258,13 +2337,30 @@ int dxQuickStepIsland_Stage4LCP_IterationStart_Callback(void *_stage4CallContext
     const dxStepperProcessingCallContext *callContext = stage4CallContext->m_stepperCallContext;
 
     dxWorld *world = callContext->m_world;
-    dxQuickStepParameters *qs = &world->qs;
 
-    const unsigned int num_iterations = qs->num_iterations;
+    const unsigned int num_iterations = world->qs.num_iterations;
     unsigned iteration = stage4CallContext->m_LCP_iteration;
-    
-    if (iteration < num_iterations)
-    {
+
+    bool bAbortIterating = false;
+    dReal iterationMaxAdjustment = iteration != 0 ? stage4CallContext->GetLCPMaxAdjustment() : REAL(0.0);
+
+    if (iteration != 0) {
+        // Use strict comparison to have zero as a full iteration count enforcement
+        if (iterationMaxAdjustment < world->qs.marginal_delta_values[MDK_PREMATURE_EXIT_DELTA]) {
+            ++g_uiPrematureExits;
+            bAbortIterating = true;
+        }
+        else if (stage4CallContext->m_LCP_extra_num_iterations != 0) {
+            if (iterationMaxAdjustment <= world->qs.marginal_delta_values[MDK_EXTRA_ITERATIONS_REQUIREMENT_DELTA]) {
+                bAbortIterating = true;
+            }
+        }
+    }
+
+    if (!bAbortIterating) {
+        stage4CallContext->UnsafelyAssignLCPMaxAdjustment(0);
+        dIASSERT(iteration < num_iterations);
+
         dCallReleaseeID nextReleasee;
         dCallReleaseeID stage4LCP_IterationSyncReleasee = stage4CallContext->m_LCP_IterationSyncReleasee;
         unsigned int stage4LCP_Iteration_allowedThreads = stage4CallContext->m_LCP_IterationAllowedThreads;
@@ -2284,9 +2380,21 @@ int dxQuickStepIsland_Stage4LCP_IterationStart_Callback(void *_stage4CallContext
         // and the same iteration index may be used again).
         stage4CallContext->m_LCP_iteration = iteration + 1;
 
-        if (iteration + 1 != num_iterations) {
+        bool lastIteration = false;
+        if (iteration + 1 - stage4CallContext->m_LCP_extra_num_iterations == num_iterations) {
+            if (stage4CallContext->m_LCP_extra_num_iterations != 0
+                || world->qs.max_num_extra_iterations == 0 || iterationMaxAdjustment <= world->qs.marginal_delta_values[MDK_EXTRA_ITERATIONS_REQUIREMENT_DELTA]) {
+                lastIteration = true;
+            }
+            else {
+                ++g_uiProlongedExecs;
+                stage4CallContext->m_LCP_extra_num_iterations = world->qs.max_num_extra_iterations;
+            }
+        }
+
+        if (!lastIteration) {
             dCallReleaseeID stage4LCP_IterationStartReleasee;
-            world->PostThreadedCallForUnawareReleasee(NULL, &stage4LCP_IterationStartReleasee, syncCallDependencies, stage4LCP_IterationSyncReleasee, 
+            world->PostThreadedCallForUnawareReleasee(NULL, &stage4LCP_IterationStartReleasee, syncCallDependencies, stage4LCP_IterationSyncReleasee,
                 NULL, &dxQuickStepIsland_Stage4LCP_IterationStart_Callback, stage4CallContext, 0, "QuickStepIsland Stage4LCP_Iteration Start");
             nextReleasee = stage4LCP_IterationStartReleasee;
         }
@@ -2302,7 +2410,7 @@ int dxQuickStepIsland_Stage4LCP_IterationStart_Callback(void *_stage4CallContext
             stage4CallContext->ResetSOR_ConstraintsReorderVariables(reorderThreads);
 
             dCallReleaseeID stage4LCP_ConstraintsReorderingSyncReleasee;
-            world->PostThreadedCall(NULL, &stage4LCP_ConstraintsReorderingSyncReleasee, reorderThreads, nextReleasee, 
+            world->PostThreadedCall(NULL, &stage4LCP_ConstraintsReorderingSyncReleasee, reorderThreads, nextReleasee,
                 NULL, &dxQuickStepIsland_Stage4LCP_ConstraintsReorderingSync_Callback, stage4CallContext, 0, "QuickStepIsland Stage4LCP_ConstraintsReordering Sync");
 
             if (reorderThreads > 1) {
@@ -2677,6 +2785,8 @@ void dxQuickStepIsland_Stage4LCP_MTIteration(dxQuickStepperStage4CallContext *st
 
     unsigned int knownToBeCompletedLevel = initiallyKnownToBeCompletedLevel;
 
+    dReal maxAdjustment = 0;
+
     while (true) {
         unsigned int initialLevelRoot = mi_links[2 * dxHEAD_INDEX + 0];
         if (initialLevelRoot != dxHEAD_INDEX && initialLevelRoot == knownToBeCompletedLevel) {
@@ -2697,7 +2807,9 @@ void dxQuickStepIsland_Stage4LCP_MTIteration(dxQuickStepperStage4CallContext *st
                 unsigned currentLevelNextLink = mi_links[2 * (sizeint)currentLevelFirstLink + 0];
                 if (ThrsafeCompareExchange(&mi_links[2 * (sizeint)currentLevelRoot + 1], currentLevelFirstLink, currentLevelNextLink)) {
                     // if succeeded, execute selected iteration step...
-                    dxQuickStepIsland_Stage4LCP_IterationStep(stage4CallContext, dxDECODE_INDEX(currentLevelFirstLink));
+                    dReal currAdjustment;
+                    dxQuickStepIsland_Stage4LCP_IterationStep(stage4CallContext, dxDECODE_INDEX(currentLevelFirstLink), currAdjustment);
+                    maxAdjustment = dMax(currAdjustment, maxAdjustment);
 
                     // Check if there are any dependencies
                     unsigned level0DownLink = mi_links[2 * (sizeint)currentLevelFirstLink + 1];
@@ -2751,8 +2863,10 @@ void dxQuickStepIsland_Stage4LCP_MTIteration(dxQuickStepperStage4CallContext *st
         knownToBeCompletedLevel = initialLevelRoot;
     }
 
-    // Decrement running threads count on exit
+    // Decrement running threads count on exit (do it as soon as the decision has been made)
     ThrsafeAdd(&stage4CallContext->m_LCP_iterationThreadsRemaining, (atomicord32)(-1));
+    // Store the maxAdjustment recorded
+    stage4CallContext->SafelyAccumulateLCPMaxAdjustment(maxAdjustment);
 }
 
 static 
@@ -2760,10 +2874,15 @@ void dxQuickStepIsland_Stage4LCP_STIteration(dxQuickStepperStage4CallContext *st
 {
     const dxQuickStepperLocalContext *localContext = stage4CallContext->m_localContext;
 
+    dReal maxAdjustment = 0;
     unsigned int m = localContext->m_m;
     for (unsigned int i = 0; i != m; ++i) {
-        dxQuickStepIsland_Stage4LCP_IterationStep(stage4CallContext, i);
+        dReal currAdjustment;
+        dxQuickStepIsland_Stage4LCP_IterationStep(stage4CallContext, i, currAdjustment);
+        maxAdjustment = dMax(currAdjustment, maxAdjustment);
     }
+
+    stage4CallContext->UnsafelyAssignLCPMaxAdjustment(maxAdjustment);
 }
 
 //***************************************************************************
@@ -2780,7 +2899,7 @@ void dxQuickStepIsland_Stage4LCP_STIteration(dxQuickStepperStage4CallContext *st
 // b, lo and hi are modified on exit
 
 static 
-void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *stage4CallContext, unsigned int i)
+void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *stage4CallContext, unsigned int i, dReal &out_maxAdjustment)
 {
     const dxQuickStepperLocalContext *localContext = stage4CallContext->m_localContext;
 
@@ -2861,6 +2980,7 @@ void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *
     //dReal ramp = (1-((dReal)(iteration+1)/(dReal)num_iterations));
     //delta *= ramp;
 
+    dReal maxIMJ;
     {
         dReal *iMJ = stage4CallContext->m_iMJ;
         const dReal *iMJ_ptr = iMJ + (sizeint)index * IMJ__MAX;
@@ -2872,6 +2992,7 @@ void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *
         fc_ptr1[CFE_AX] += delta * iMJ_ptr[IMJ_1AX];
         fc_ptr1[CFE_AY] += delta * iMJ_ptr[IMJ_1AY];
         fc_ptr1[CFE_AZ] += delta * iMJ_ptr[IMJ_1AZ];
+        maxIMJ = iMJ_ptr[IMJ_1JVE_MAXABS];
         // @@@ potential optimization: handle 1-body constraints in a separate
         //     loop to avoid the cost of test & jump?
         if (fc_ptr2) {
@@ -2881,8 +3002,11 @@ void dxQuickStepIsland_Stage4LCP_IterationStep(dxQuickStepperStage4CallContext *
             fc_ptr2[CFE_AX] += delta * iMJ_ptr[IMJ_2AX];
             fc_ptr2[CFE_AY] += delta * iMJ_ptr[IMJ_2AY];
             fc_ptr2[CFE_AZ] += delta * iMJ_ptr[IMJ_2AZ];
+            maxIMJ = dMax(maxIMJ, iMJ_ptr[IMJ_2JVE_MAXABS]);
         }
     }
+
+    out_maxAdjustment = dFabs(maxIMJ * delta);
 }
 
 static inline 
@@ -3049,6 +3173,11 @@ void dxQuickStepIsland_Stage5(dxQuickStepperStage5CallContext *stage5CallContext
 {
     const dxStepperProcessingCallContext *callContext = stage5CallContext->m_stepperCallContext;
     const dxQuickStepperLocalContext *localContext = stage5CallContext->m_localContext;
+
+    if (++g_uiIterationIndex % 256 == 0)
+    {
+        printf("Iteration %08u: PE=%u LE=%u\r", g_uiIterationIndex, g_uiPrematureExits, g_uiProlongedExecs);
+    }
 
     dxWorldProcessMemArena *memarena = callContext->m_stepperArena;
     memarena->RestoreState(stage5CallContext->m_stage3MemArenaState);
