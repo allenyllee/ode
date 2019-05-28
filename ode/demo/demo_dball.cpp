@@ -79,8 +79,8 @@ void start()
 
 
     // initial camera position
-    static float xyz[3] = {3.8966, -2.0614, 4.0300};
-    static float hpr[3] = {153.5, -16.5, 0};
+    float xyz[3] = {3.8966, -2.0614, 4.0300};
+    float hpr[3] = {153.5, -16.5, 0};
     dsSetViewpoint (xyz,hpr);
 }
 
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
     dInitODE();
 
     // run demo
-    dsSimulationLoop (argc, argv, 800, 600, &fn);
+    dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 
     dCloseODE();
     return 0;

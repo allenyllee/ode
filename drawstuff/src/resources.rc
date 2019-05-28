@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -7,45 +7,21 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-//#include "afxres.h"
-
-// added by RLS to make this work with windres
+#ifdef __GNUC__
 #include "winresrc.h"
-#define IDC_STATIC (-1)
+#else
+#include "winres.h"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_ABOUT DIALOG DISCARDABLE  0, 0, 257, 105
-STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "About"
-FONT 8, "MS Sans Serif"
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,200,84,50,14
-    LTEXT           "Simulation test environment",IDC_STATIC,7,7,243,8
-    LTEXT           "Change the camera position by clicking + dragging in the main window.",
-                    IDC_STATIC,7,24,243,8
-    LTEXT           "Left button - pan and tilt.",IDC_STATIC,25,37,225,8
-    LTEXT           "Right button - forward and sideways.",IDC_STATIC,25,48,
-                    225,8
-    LTEXT           "Left + Right button (or middle button) - sideways and up.",
-                    IDC_STATIC,25,59,225,8
-END
-
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -53,18 +29,22 @@ END
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE
+2 TEXTINCLUDE 
 BEGIN
-    //"#include ""afxres.h""\r\n"
+    "#ifdef __GNUC__\r\n"
+    "#include ""winresrc.h""\r\n"
+    "#else\r\n"
+    "#include ""winres.h""\r\n"
+    "#endif\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -75,10 +55,29 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Dialog
+//
+
+IDD_ABOUT DIALOG 0, 0, 257, 105
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "About"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,200,84,50,14
+    LTEXT           "Simulation test environment",IDC_STATIC,7,7,243,8
+    LTEXT           "Change the camera position by clicking + dragging in the main window.",IDC_STATIC,7,24,243,8
+    LTEXT           "Left button - pan and tilt.",IDC_STATIC,25,37,225,8
+    LTEXT           "Right button - forward and sideways.",IDC_STATIC,25,48,225,8
+    LTEXT           "Left + Right button (or middle button) - sideways and up.",IDC_STATIC,25,59,225,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Menu
 //
 
-IDR_MENU1 MENU DISCARDABLE
+IDR_MENU1 MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -108,7 +107,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUT, DIALOG
     BEGIN
@@ -127,7 +126,7 @@ END
 // Accelerator
 //
 
-IDR_ACCELERATOR1 ACCELERATORS DISCARDABLE
+IDR_ACCELERATOR1 ACCELERATORS
 BEGIN
     "O",            IDM_SINGLE_STEP,        VIRTKEY, CONTROL, NOINVERT
     "P",            IDM_PAUSE,              VIRTKEY, CONTROL, NOINVERT
@@ -136,7 +135,7 @@ BEGIN
     "X",            IDM_EXIT,               VIRTKEY, CONTROL, NOINVERT
 END
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

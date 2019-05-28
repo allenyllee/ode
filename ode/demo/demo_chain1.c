@@ -88,8 +88,8 @@ static void nearCallback (void *data, dGeomID o1, dGeomID o2)
 
 static void start()
 {
-  static float xyz[3] = {2.1640f,-1.3079f,1.7600f};
-  static float hpr[3] = {125.5000f,-17.0000f,0.0000f};
+  float xyz[3] = {2.1640f,-1.3079f,1.7600f};
+  float hpr[3] = {125.5000f,-17.0000f,0.0000f};
 
   dAllocateODEDataForThread(dAllocateMaskAll);
   dsSetViewpoint (xyz,hpr);
@@ -161,7 +161,7 @@ int main (int argc, char **argv)
   }
 
   /* run simulation */
-  dsSimulationLoop (argc,argv,352,288,&fn);
+  dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 
   dJointGroupDestroy (contactgroup);
   dSpaceDestroy (space);

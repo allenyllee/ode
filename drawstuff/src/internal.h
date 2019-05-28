@@ -30,6 +30,9 @@
 
 // supplied by platform specific code
 
+void dsPlatformInitializeConsole();
+void dsPlatformFinalizeConsole();
+
 void dsPlatformSimLoop (int window_width, int window_height,
 			dsFunctions *fn, int initial_pause);
 
@@ -39,6 +42,13 @@ void dsPlatformSimLoop (int window_width, int window_height,
 void dsStartGraphics (int width, int height, dsFunctions *fn);
 void dsDrawFrame (int width, int height, dsFunctions *fn, int pause);
 void dsStopGraphics();
+
+enum
+{
+    dsMOTIONMODE_LBUTTONDOWN = 0x00000001,
+    dsMOTIONMODE_MBUTTONDOWN = 0x00000002,
+    dsMOTIONMODE_RBUTTONDOWN = 0x00000004,
+};
 void dsMotion (int mode, int deltax, int deltay);
 
 int dsGetShadows();

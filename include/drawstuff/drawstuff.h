@@ -95,6 +95,35 @@ typedef struct dsFunctions {
 
 
 /**
+ * @brief Initializes output console.
+ *
+ * The function performs initialization routines for the application console.
+ *
+ * The function is to be called only if @fn dsSimulationLoop is not invoked.
+ *
+ * @param argc Reserved for future use
+ * @param argv Reserved for future use
+ * @ingroup drawstuff
+ */
+DS_API void dsInitializeConsole(int argc, char **argv);
+
+
+/**
+ * @brief Finalizes output console.
+ *
+ * The function performs all the necessary finalization for the application console.
+ *
+ * The function is to be called only if @fn dsSimulationLoop is not invoked.
+ *
+ * @ingroup drawstuff
+ */
+DS_API void dsFinalizeConsole();
+
+
+#define DS_SIMULATION_DEFAULT_WIDTH 1280
+#define DS_SIMULATION_DEFAULT_HEIGHT 720
+
+/**
  * @brief Does the complete simulation.
  * @ingroup drawstuff
  * This function starts running the simulation, and only exits when the simulation is done.
@@ -137,7 +166,7 @@ DS_API void dsPrint (const char *msg, ...);
  * points along the x axis, pitch=0 is looking towards the horizon, and
  * roll 0 is "unrotated".
  */
-DS_API void dsSetViewpoint (float xyz[3], float hpr[3]);
+DS_API void dsSetViewpoint (const float xyz[3], const float hpr[3]);
 
 
 /**

@@ -117,8 +117,8 @@ static void start()
 {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
-  static float xyz[3] = {-8,-9,3};
-  static float hpr[3] = {45.0000f,-27.5000f,0.0000f};
+  float xyz[3] = {-8,-9,3};
+  float hpr[3] = {45.0000f,-27.5000f,0.0000f};
   dsSetViewpoint (xyz,hpr);
 }
 
@@ -222,7 +222,7 @@ int main (int argc, char **argv)
   dSpaceAdd (space, sphgeom);
 
   // run simulation
-  dsSimulationLoop (argc,argv,352,288,&fn);
+  dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 
   dJointGroupEmpty (contactgroup);
   dJointGroupDestroy (contactgroup);

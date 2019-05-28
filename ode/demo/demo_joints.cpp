@@ -938,8 +938,8 @@ static void start()
 {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
-  static float xyz[3] = {1.0382f,-1.0811f,1.4700f};
-  static float hpr[3] = {135.0000f,-19.5000f,0.0000f};
+  float xyz[3] = {1.0382f,-1.0811f,1.4700f};
+  float hpr[3] = {135.0000f,-19.5000f,0.0000f};
   dsSetViewpoint (xyz,hpr);
 }
 
@@ -1034,7 +1034,7 @@ void doTest (int argc, char **argv, int n, int fatal_if_bad_n)
 
   // run simulation
   if (cmd_graphics) {
-    dsSimulationLoop (argc,argv,352,288,&fn);
+    dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
   }
   else {
     for (int i=0; i < max_iterations; i++) simLoop (0);

@@ -211,8 +211,8 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
 
 // start simulation - set viewpoint
 
-static float xyz[3] = {2.1106f,-1.3007,2.f};
-static float hpr[3] = {150.f,-13.5000f,0.0000f};
+static /*const */float xyz[3] = {2.1106f,-1.3007,2.f}; // This variable is changed at runtime
+static const float hpr[3] = {150.f,-13.5000f,0.0000f};
 
 static void start()
 {
@@ -512,7 +512,7 @@ int main (int argc, char **argv)
     dGeomSetCollideBits(platform, ~1ul);
 
     // run simulation
-    dsSimulationLoop (argc,argv,352,288,&fn);
+    dsSimulationLoop(argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 
     dJointGroupDestroy (contactgroup);
     dSpaceDestroy (space);

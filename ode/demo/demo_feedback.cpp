@@ -109,8 +109,8 @@ static void start()
 {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
-  static float xyz[3] = { -6, 8, 6};
-  static float hpr[3] = { -65.0f, -27.0f, 0.0f};
+  float xyz[3] = { -6, 8, 6};
+  float hpr[3] = { -65.0f, -27.0f, 0.0f};
   dsSetViewpoint (xyz,hpr);
 }
 
@@ -144,7 +144,7 @@ void drawGeom (dGeomID g)
 
 static void inspectJoints(void)
 {
-  const dReal forcelimit = 4000.0;
+  const dReal forcelimit = 5000.0;
   int i;
   for (i=0; i<SEGMCNT-1; i++)
   {
@@ -291,7 +291,7 @@ int main (int argc, char **argv)
     colours[i]=0.0;
 
   // run simulation
-  dsSimulationLoop (argc,argv,1280,720,&fn);
+  dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 
   dJointGroupEmpty(contactgroup);
   dJointGroupDestroy (contactgroup);

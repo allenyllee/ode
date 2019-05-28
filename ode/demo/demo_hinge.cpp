@@ -55,8 +55,8 @@ static void start()
 {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
-  static float xyz[3] = {1.0382f,-1.0811f,1.4700f};
-  static float hpr[3] = {135.0000f,-19.5000f,0.0000f};
+  float xyz[3] = {1.0382f,-1.0811f,1.4700f};
+  float hpr[3] = {135.0000f,-19.5000f,0.0000f};
   dsSetViewpoint (xyz,hpr);
   printf ("Press 'e' to start/stop occasional error.\n");
 }
@@ -157,7 +157,7 @@ int main (int argc, char **argv)
   dJointSetHingeAxis (hinge,1,-1,1.41421356);
 
   // run simulation
-  dsSimulationLoop (argc,argv,352,288,&fn);
+  dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 
   dWorldDestroy (world);
   dCloseODE();

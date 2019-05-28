@@ -152,8 +152,8 @@ static void start()
 {
 	dAllocateODEDataForThread(dAllocateMaskAll);
 
-	static float xyz[3] = {3.8548f,9.0843f,7.5900f};
-	static float hpr[3] = {-145.5f,-22.5f,0.25f};
+	float xyz[3] = {3.8548f,9.0843f,7.5900f};
+	float hpr[3] = {-145.5f,-22.5f,0.25f};
 	dsSetViewpoint (xyz,hpr);
 	printf ("Press:\t'a' to increase speed.\n"
 			"\t'z' to decrease speed.\n"
@@ -639,7 +639,7 @@ int main (int argc, char **argv)
 	dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
 	// run simulation
-	dsSimulationLoop (argc,argv,352,288,&fn);
+	dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
 	
 	dThreadingImplementationShutdownProcessing(threading);
 	dThreadingFreeThreadPool(pool);

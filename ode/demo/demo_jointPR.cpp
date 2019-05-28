@@ -62,8 +62,8 @@ int flag = 0;
 
 
 //camera view
-static float xyz[3] = {2.0f,-3.5f,2.0000f};
-static float hpr[3] = {90.000f,-25.5000f,0.0000f};
+static const float xyz[3] = {2.0f,-3.5f,2.0000f};
+static const float hpr[3] = {90.000f,-25.5000f,0.0000f};
 //world,space,body & geom
 static dWorldID world;
 static dSpaceID space;
@@ -424,7 +424,7 @@ int main (int argc, char **argv)
     dSpaceAdd(box1_space,box1[0]);
 
     // run simulation
-    dsSimulationLoop (argc,argv,400,300,&fn);
+    dsSimulationLoop (argc, argv, DS_SIMULATION_DEFAULT_WIDTH, DS_SIMULATION_DEFAULT_HEIGHT, &fn);
     dJointGroupDestroy (contactgroup);
     dSpaceDestroy (space);
     dWorldDestroy (world);
